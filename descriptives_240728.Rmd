@@ -1,14 +1,20 @@
 ---
 title: "CannaQuant - Descriptives"
-output: html_document
-date: "2024-03-22"
+output:
+  html_document: default
+  pdf_document: default
+date: "28 July 2024"
 ---
 
 #   Data cleaned
 
 in "clean data.R"
 
-Removed: missing value in sex OR age OR edu
+Switzerland and Germany: missing value in sex OR age OR education
+
+All other countries: missing value in sex OR age
+
+Reason: many missing values in education in most countries --> Arto to check the data!
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -35,30 +41,14 @@ theme_set( theme_gdocs() )
 options(scipen = 999)
 
 # READ IN DATA
+filename <- paste0(path,"all_countries_cleaned_data_",Sys.Date(),".rds")
+input <- readRDS(file = filename)
+dim(input) # 1405 * 18
 
-##  GERMANY
-filename <- paste0(path,"DE_cleaned_data.csv")
-input1 <- data.table(read.csv(filename))
-dim(input1) # 370 * 14
+data <- copy(input)
 
-##  SWITZERLAND
-filename <- paste0(path,"DE_cleaned_data.csv")
-input2 <- data.table(read.csv(filename))
-dim(input2) # 370 * 14
-input2$country <- "Switzerland"
+# PREPARE DATA
 
-# COMBINE DATA
-
-data <- rbind(input1,
-              input2)
-
-# Define factors
-data$sex <- factor(data$sex, levels = c("men","women"))
-data$agegroup <- factor(data$agegroup, levels = c("18-24","25-34","35-44","45-54","55-73"))
-data$edugroup <- factor(data$edugroup, levels = c("low","mid","high"))
-data$freqgroup <- factor(data$freqgroup, levels = c("1-9","10-19","20-28","29-30"))
-data$thc_label <- factor(data$thc_label, levels = c("0-4.9%","5-9.9%","10-14.9%","15-19.9%","20-24.9%","25-29.9%","30%+","unknown"))
-data$highrisk <- factor(data$highrisk, labels = c("low","high"))
 
 
 ```
@@ -73,12 +63,11 @@ How many valid responses are there in each country?
 
 ```{r echo = F}
 
-pdat <- data[, .N, by = country]
+pdat <- data[, .N, by = iso]
+pdat[, country := paste0(iso," (N=", N,")")]
 
 ggplot(pdat) +
   geom_col(aes(x = country, y = N, fill = country), show.legend = F) +
-  #geom_histogram(aes(fill = country, y = N), 
-  #               position = "stack") +
   scale_fill_gdocs() + 
   scale_y_continuous(breaks = c(100,200,300,400))
 
@@ -105,17 +94,22 @@ temp <- temp[, .(share_men = sum(sex == "men")/.N,
 print(temp)
 rm(temp)
 
+summary(glm(age ~ relevel(country, ref = "Germany"), data, family = "gaussian"))
+print("Respondents are youngest in Czechia and oldest in Germany")
+
 
 ```
+
+IGNORE THE EDUCATION DISTRIBUTION FOR NOW!
 
 ```{r echo = F}
 
 pdat <- copy(data)
-levels(pdat$agegroup) <- rev(levels(pdat$agegroup))
+#levels(pdat$agegroup) <- rev(levels(pdat$agegroup))
 
 ggplot(pdat, aes(x = agegroup, fill = edugroup)) +
   geom_histogram(stat = "count") +
-  facet_grid(country ~ sex) +
+  facet_grid(iso ~ sex) +
   labs(x = "Age",
        y = "Number of respondents",
        fill = "Education") + 
@@ -131,18 +125,23 @@ How is cannabis use frequency distributed in the different countries?
 
 ```{r echo = F}
 
-pdat <- data[!is.na(freqgroup),.N, by = .(country,freqgroup)]
-levels(pdat$freqgroup) <- rev(levels(pdat$freqgroup))
+pdat <- data[!is.na(freqgroup),.N, by = .(iso,country,freqgroup)]
+pdat[, ':=' (valid_N =sum(N),
+        prop = N/sum(N)), by = country]
+pdat[, country := paste0(iso," (N=", valid_N,")")]
 
-ggplot(pdat, aes(x = country, y = N, fill = freqgroup)) +
+#levels(pdat$freqgroup) <- rev(levels(pdat$freqgroup))
+
+ggplot(pdat, aes(x = country, y = prop, fill = freqgroup)) +
+  ggtitle("Number of use days in the past 30 days") +
   geom_col() +
-  scale_fill_gdocs() +
-  labs(y = "Number of respondents")
+  scale_fill_gdocs("") +
+  scale_y_continuous("", labels = scales::percent)
 
-out <- pdat[,.(valid_N =sum(N)),by = country]
-print(out)
-  
-rm(pdat,out)
+rm(pdat)
+
+print("About 50% of respondents use cannabis (near) daily in CH, DE and ES and the percentage is at about 25% in CZ and SK")
+
 
 ```
 
@@ -153,22 +152,29 @@ Cutoff >= 7 indicates risk for severe use disorder
 
 ```{r echo = F}
 
-pdat <- data[!is.na(cast_tot),.N, by = .(country,cast_tot)]
+pdat <- data[!is.na(cast_tot),.N, by = .(iso,country,cast_tot)]
+pdat[, ':=' (valid_N =sum(N),
+        prop = N/sum(N)), by = country]
+pdat[, country := paste0(iso,"\n(N=", valid_N,")")]
+
 pdat[, group := cast_tot >= 7]
 
-ggplot(pdat, aes(x = cast_tot, y = N, fill = group)) +
+ggplot(pdat, aes(x = cast_tot, y = prop, fill = group)) +
+  ggtitle("% of respondents with CAST sum score x") +
   geom_col(show.legend = F) +
   geom_vline(xintercept = 6.5) +
   scale_fill_gdocs() +
   facet_grid(country ~ .) +
-  labs(x = "CAST Score",
-       y = "Number of respondents") 
+  scale_y_continuous("", labels = scales::percent) +
+  labs(x = "CAST Score") 
 
 out <- data[,.(.N,cast_tot),by = country]
 out <- out[,.(n = sum(cast_tot >=7)), by = .(country,N)]
 print(out[,.(country,CAST_7_or_more = n/N, valid_N = N)])
 
-rm(pdat, out)
+rm(pdat)
+
+print("About 50% are at risk for CUD but this percentage is higher in Spain (73%)")
 
 ```
 
@@ -178,17 +184,20 @@ How is the average THC content distributed in the different countries?
 
 ```{r echo = F}
 
-pdat <- data[,.N, by = .(country,thc_label)]
+pdat <- data[,.N, by = .(iso,country,thc_label)]
+pdat[, ':=' (valid_N =sum(N),
+        prop = N/sum(N)), by = country]
+pdat[, country := paste0(iso," (N=", valid_N,")")]
 
-ggplot(pdat, aes(x = country, y = N, fill = thc_label)) +
+ggplot(pdat, aes(x = country, y = prop, fill = thc_label)) +
   geom_col() +
   scale_fill_gdocs(na.translate = T) +
+  scale_y_continuous("", labels = scales::percent) +
   labs(y = "Number of respondents") 
   
-out <- pdat[,.(valid_N =sum(N)),by = country]
-print(out)
-
 rm(pdat)
+
+print("Insufficient THC knowledge in CZ, ES, SK - data problem?")
 
 ```
 
@@ -198,19 +207,20 @@ rm(pdat)
 
 ```{r echo = F}
 
-pdat <- data[,.N, by = .(country,pref_type)]
+pdat <- data[,.N, by = .(iso,country,pref_type)]
+pdat[, ':=' (valid_N =sum(N),
+        prop = N/sum(N)), by = country]
+pdat[, country := paste0(iso," (N=", valid_N,")")]
 levels(pdat$pref_type) <- rev(levels(pdat$pref_type))
 
-ggplot(pdat, aes(x = country, y = N, fill = pref_type)) +
+ggplot(pdat, aes(x = country, y = prop, fill = pref_type)) +
   geom_col(stat = "count") +
   scale_fill_gdocs() +
   labs(y = "Number of respondents")
 
-out <- pdat[,.(valid_N =sum(N)),by = country]
-print(out)
-  
-rm(pdat, out)
+rm(pdat)
 
+print("High preference of cannabis flower in all countries; resin plays a role only in CH and ES")
 
 ```
 
@@ -219,19 +229,24 @@ rm(pdat, out)
 ```{r include = F}
 
 summary(data$cw_tot_flowers)
-data[,quantile(cw_tot_flowers,0.95,na.rm = T)] # 75g
+data[,quantile(cw_tot_flowers,0.95,na.rm = T), by = iso] # DE: 74g // CH: 104g
 
 
 ```
 
-- Removed very large amounts (more than 75g; 5% of responses) for illustration
+- Removed top 5% -> very large amounts (CZ: >111g; DE: >70g; SV: >60g; ES: >150g; CH: >104g) for illustration
 - Analysed only flowers due to small N of resin
 
 ```{r echo = F}
 
-pdat <- data[complete.cases(cw_tot_flowers),.(country,sex,agegroup,edugroup,freqgroup,highrisk,cw_tot_flowers)]
-pdat <- pdat[cw_tot_flowers <= 75]
-
+pdat <- data[complete.cases(cw_tot_flowers),.(iso,country,sex,agegroup,edugroup,freqgroup,highrisk,cw_tot_flowers)]
+pdat <- pdat[(iso == "CZ" & cw_tot_flowers <= 111) |
+               (iso == "DE" & cw_tot_flowers <= 70) |
+               (iso == "SK" & cw_tot_flowers <= 60) |
+               (iso == "ES" & cw_tot_flowers <= 150) |
+               (iso == "CH" &  cw_tot_flowers <= 104)]
+pdat[, ':=' (valid_N =sum(.N)), by = country]
+pdat[, country := paste0(iso,"\n(N=", valid_N,")")]
 
 ##  FREQUENCY
 pdatfreq <- copy(pdat[complete.cases(freqgroup)])
@@ -243,9 +258,6 @@ ggplot(pdatfreq) +
   labs(x = "Use Frequency",
        y = "QWA: Grams of flowers in past 30 days")
 
-out <- pdatfreq[,.(valid_N =.N),by = country]
-print(out)
-
 ##  CAST RISK
 pdatrisk <- copy(pdat[complete.cases(highrisk)])
 
@@ -256,10 +268,7 @@ ggplot(pdat) +
   labs(x = "CUD RISK (CAST >= 7)",
        y = "QWA: Grams of flowers in past 30 days")
 
-out <- pdatrisk[,.(valid_N =.N),by = country]
-print(out)
-
-rm(pdat, pdatfreq, pdatrisk, out)
+rm(pdat, pdatfreq, pdatrisk)
 
 ```
 
@@ -268,18 +277,24 @@ rm(pdat, pdatfreq, pdatrisk, out)
 ```{r include = F}
 
 summary(data$total_cannabis)
-data[,quantile(total_cannabis,0.95,na.rm = T)] # 84g
+data[,quantile(total_cannabis,0.95,na.rm = T), by = country] # DE: 82g // CH: 193g
 
 ```
 
-- Removed very large amounts (more than 84g; 5% of responses) for illustration
+- Removed top 5% -> very large amounts (CZ: >65; DE: >75g; SK: >96g; ES: >138g; CH: >193g) for illustration
 - Analysed only flowers due to small N of resin
 
 
 ```{r echo = F}
 
-pdat <- data[complete.cases(total_flower),.(country,sex,agegroup,edugroup,freqgroup,highrisk,total_flower)]
-pdat <- pdat[total_flower <= 84]
+pdat <- data[complete.cases(total_flower),.(iso,country,sex,agegroup,edugroup,freqgroup,highrisk,total_flower)]
+pdat <- pdat[(iso == "CZ" & total_flower <= 65) |
+               (iso == "DE" & total_flower <= 75) |
+               (iso == "SK" & total_flower <= 96) |
+               (iso == "ES" & total_flower <= 138) |
+               (iso == "CH" & total_flower <= 193)]
+pdat[, ':=' (valid_N =sum(.N)), by = country]
+pdat[, country := paste0(iso,"\n(N=", valid_N,")")]
 
 ##  FREQUENCY
 pdatfreq <- copy(pdat[complete.cases(freqgroup)])
@@ -291,9 +306,6 @@ ggplot(pdatfreq) +
   labs(x = "Use Frequency",
        y = "CQ: Grams of flowers in past 30 days")
 
-out <- pdatfreq[,.(valid_N =.N),by = country]
-print(out)
-
 ##  CAST RISK
 pdatrisk <- copy(pdat[complete.cases(highrisk)])
 
@@ -304,12 +316,7 @@ ggplot(pdat) +
   labs(x = "CUD RISK (CAST >= 7)",
        y = "CQ: Grams of flowers in past 30 days")
 
-out <- pdatrisk[,.(valid_N =.N),by = country]
-print(out)
-
-rm(pdat, pdatfreq, pdatrisk, out)
-
-```
+rm(pdat, pdatfreq, pdatrisk)
 
 ```
 
