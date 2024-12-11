@@ -48,7 +48,7 @@ options(scipen = 999)
 filename <- paste0(path,"Czechia/CQ czech.xlsx")
 
 input1 <- data.table(openxlsx::read.xlsx(filename))
-dim(input1) # 436 * 57  # 925 before October 24
+dim(input1) # 925 * 57  
 input1$country <- "Czechia"
 
 
@@ -108,7 +108,7 @@ input6$country <- "Spain"
 filename <- paste0(path,"Sweden/CQ sweden.xlsx")
 
 input7 <- data.table(openxlsx::read.xlsx(filename))
-dim(input7) # 173 * 57 # 298 before October 24
+dim(input7) # 169 * 57
 input7$country <- "Sweden"
 
 
@@ -118,7 +118,7 @@ input7$country <- "Sweden"
 filename <- paste0(path,"Switzerland/CQ switzerland.xlsx")
 
 input8 <- data.table(openxlsx::read.xlsx(filename))
-dim(input8) # 173 * 57 # 298 before October 24
+dim(input8) # 173 * 57
 input8$country <- "Switzerland"
 
 
@@ -138,22 +138,21 @@ cz <- copy(input1)
 str(cz)
 
 cz <- cz[,.(country,studyID,male,age,
-            education = educ,
+            educ,
             frequency,freq_v1,freq_v2,
             pref_type,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 cz$resp_total <- nrow(cz)
 
 # get educ:
-cz[, table(education, useNA = "always")] # mostly missing
-cz[, educ := education]
-cz$education <-  NULL
+cz[, table(educ, useNA = "always")] # mostly missing
 
 # keep only if complete in sex, age, edu
 cz[!complete.cases(cz[,.(male,age,educ)])]  # remove 403 rows
@@ -180,8 +179,10 @@ de <- de[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
+
 
 # add total number of responses
 de$resp_total <- nrow(de)
@@ -195,7 +196,6 @@ de[complete.cases(de[,.(male,age,educ)])]  # keep 447 rows
 de[!complete.cases(de[,.(male,age)])]  # remove 383 rows
 de[complete.cases(de[,.(male,age)])]  # keep 453 rows
 de <- de[complete.cases(de[,.(male,age)])]  # keep 453 rows
-
 
 
 ##  3) Netherlands
@@ -213,8 +213,9 @@ nl <- nl[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 nl$resp_total <- nrow(nl)
@@ -244,8 +245,9 @@ pt <- pt[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 pt$resp_total <- nrow(pt)
@@ -275,8 +277,9 @@ sv <- sv[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 sv$resp_total <- nrow(sv)
@@ -306,8 +309,9 @@ es <- es[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 es$resp_total <- nrow(es)
@@ -337,8 +341,9 @@ sw <- sw[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 sw$resp_total <- nrow(sw)
@@ -368,8 +373,9 @@ ch <- ch[,.(country,studyID,male,age,
             thc_flower,thc_resin,thc_other,thc_avg,
             cast_tot,highrisk,
             cw_tot_flowers,cw_tot_resin,
-            total_flower,size_flower,n_flower_weekday,n_flower_weekend,
-            total_resin,total_cannabis,total_thc)]
+            size_flower,n_flower_weekday,n_flower_weekend,total_flower,
+            size_resin,n_resin_weekday,n_resin_weekend,total_resin,
+            total_cannabis,total_thc)]
 
 # add total number of responses
 ch$resp_total <- nrow(ch)
@@ -394,8 +400,8 @@ ch <- ch[complete.cases(ch[,.(male,age)])]  # keep 161 rows
 
 data <- rbind(cz,de,nl,pt,sv,es,sw,ch)
 
-data$country <- factor(data$country) 
-                       #levels = c("Czechia","Germany","Slovakia","Spain","Switzerland"))
+data$country <- factor(data$country,
+                       levels = c("Czechia","Germany","Netherlands","Portugal","Slovakia","Spain","Sweden","Switzerland"))
 
 data[, iso := dplyr::recode(country,
                             "Czechia" = "CZ",
@@ -447,23 +453,17 @@ data[, table(country,agegroup, useNA = "always")]
 data[, prop.table(table(country,agegroup),1)]
 data$agegroup <- factor(data$agegroup, levels = c("18-24","25-34","35-44","45-54","55-73"))
 
-# education (add remaining countries later)
-#data[, table(educ, country, useNA = "always")] # 0 missing values
-#data$edugroup <- NA_character_
-#input1[, table(education_DE,educ)]
-#data[country == "Germany", edugroup := ifelse(educ < 3, "low", # Haupt/Real
-#                                             ifelse(educ < 8, "mid", # Fachhochschulreife/Abitur
-#                                                     ifelse(educ == 8, "high", "===")))] # Studium
-#input2[, table(education,educ)]
-#data[country == "Switzerland", edugroup := ifelse(educ < 3, "low", # Basic or primary schooling | Secondary schooling
-#                                              ifelse(educ == 3, "mid", # Post-secondary vocational training/education
-#                                                     ifelse(educ == 4, "high", "===")))] # Higher education / university studies
+# education (my informed guess):
+data[,table(educ,country, useNA = "always")]
+data$edugroup <- NA_character_
+data[, edugroup := ifelse(educ < 2, "low", # Haupt/Real
+                          ifelse(educ < 4, "mid", # Fachhochschulreife/Abitur
+                                 ifelse(educ == 4, "high", "===")))] # Studium
+data[,table(edugroup,country, useNA = "always")]
+data[, table(edugroup, useNA = "always")]
+data$edugroup <- factor(data$edugroup, levels = c("low","mid","high"))
 
-#data[, table(educ, edugroup, useNA = "always")]
-#data[, table(edugroup, useNA = "always")]
-#data$edugroup <- factor(data$edugroup, levels = c("low","mid","high"))
 
-                                        
 ##  2) CAST
 #   .............................................
 
@@ -494,6 +494,8 @@ data[, freqgroup := ifelse(freq < 10, "1-9",
 data[, table(freq, freqgroup, useNA = "always")] # 20 NA
 data$freqgroup <- factor(data$freqgroup, levels = c("1-9","10-19","20-28","29-30"))
 
+##  missing frequencies
+data[is.na(freqgroup)] # 108
 
 ##  4) Cannabis Amount - CWA
 #   .............................................
@@ -514,14 +516,27 @@ data[, pref_type := dplyr::recode(pref_type,
 # flower
 data[, table(total_flower, useNA = "always")] # 277 NA
 data[, table(is.na(total_flower))] # 277 NA, 1253 valid
+data[, table(is.na(total_flower), pref_type)] # NA = non-flower preference
 
-data[, table(is.na(total_flower), frequency,useNA = "always")]
-data[, table(is.na(total_flower), n_flower_weekday,useNA = "always")]
-data[, table(is.na(total_flower), n_flower_weekend,useNA = "always")]
-data[, table(is.na(total_flower), size_flower, useNA = "always")]
+data[total_flower == 0] # 13 cases with flower preference but missing information on flower total -> have valid information on flower size!
+data[total_flower == 0,.(country,studyID,freq_v1,freq_v2,size_flower,n_flower_weekday,n_flower_weekend,total_flower)]
+
+# resin
+data[, table(total_resin, useNA = "always")] # 1346 NA
+data[, table(is.na(total_resin))] # 184 NA, 1346 valid
+data[, table(is.na(total_resin), pref_type)] # NA = non-resin preference
+
+data[total_resin == 0] # 3 cases with flower preference but missing information on flower total -> have valid information on flower size!
+data[total_resin == 0,.(country,studyID,freq_v1,freq_v2,size_resin,n_resin_weekday,n_resin_weekend,total_resin)]
+
 
 data[, table(total_resin, useNA = "always")] # 1338 NA
-data[, table(total_cannabis, useNA = "always")] # 889 NA
+data[, table(total_cannabis, useNA = "always")] # 93 NA
+
+
+
+data[,.(pref_type,total_flower,total_resin,total_cannabis)]
+data[!is.na(total_flower) & !is.na(total_resin),.(pref_type,total_flower,total_resin,total_cannabis)] # none
 
 ##  6) THC
 #   .............................................
@@ -559,7 +574,7 @@ data$thc_label <- factor(data$thc_label, levels = c("0-4.9%","5-9.9%","10-14.9%"
 
 out <- data[,.(iso,country,studyID,
                sex,age,agegroup,
-               educ,edu.complete,
+               educ,edugroup,edu.complete,
                freqgroup,
                pref_type,
                thc_avg,thc_label,
